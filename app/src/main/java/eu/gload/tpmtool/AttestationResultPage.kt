@@ -25,7 +25,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.gload.tpmtool.logic.Attestation.AttestationResultType
-import eu.gload.tpmtool.logic.Attestation.differencesToString
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 @Composable
@@ -43,25 +45,27 @@ fun AttestationResultPage(viewModel: MainViewModel = viewModel()) {
         AttestationResultType.OK -> {
             labelBackgroundColor = Color(0xff2bc241)
             labelText = "OK"
-            detailsText = result.NewAttestationJson
+            detailsText = result.newAttestationJson
+        }
+
+        AttestationResultType.REPLAY -> {
+            labelBackgroundColor = Color(0xff2bc241)
+            labelText = "OK (Old result)"
+            detailsText = result.newAttestationJson
         }
 
         AttestationResultType.CHANGED -> {
             labelBackgroundColor = Color(0xffffd900)
             labelText = "CHANGED"
-            detailsText = differencesToString(result.differences)
+            detailsText = result.differencesString
         }
 
         AttestationResultType.FAILED -> {
             labelBackgroundColor = Color(0xffff4326)
             labelText = "FAILED"
-            detailsText = result.FailReason
+            detailsText = result.failReason
         }
 
-        null -> {
-            labelBackgroundColor = Color.Red
-            labelText = "FAILED"
-        }
     }
 
     Column {
@@ -70,24 +74,30 @@ fun AttestationResultPage(viewModel: MainViewModel = viewModel()) {
                 .background(color = labelBackgroundColor)
                 .fillMaxWidth(), fontSize = 40.sp
         )
-        Text(text = "Device name: ${result.DeviceName}", Modifier.padding(6.dp,2.dp), fontSize = 20.sp)
+        Text(text = "Device name: ${result.device?.name}", Modifier.padding(6.dp,2.dp), fontSize = 20.sp)
+        if (result.type == AttestationResultType.REPLAY) {
+            val time = result.device?.lastSuccessTime?.let { Date(it *1000) }
+            val timeFormatted = time?.let { SimpleDateFormat("yyyy-MM-dd hh:mma", Locale.US).format(it) }
+            Text(text = "Time: $timeFormatted")
+        }
         HorizontalDivider(thickness = 1.dp, color = Color.DarkGray)
         val scrollVertical = rememberScrollState(0)
         val scrollHorizontal = rememberScrollState(0)
         SelectionContainer(modifier = Modifier.weight(1f)) {
-            Text(text = detailsText, modifier = Modifier.verticalScroll(scrollVertical).
-            horizontalScroll(scrollHorizontal))
+            Text(text = detailsText, modifier = Modifier
+                .verticalScroll(scrollVertical)
+                .horizontalScroll(scrollHorizontal))
         }
         Row (horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()){
-            Button(onClick = { viewModel.changePage(Pages.Main)}, modifier = Modifier
+            Button(onClick = { viewModel.changePage(Page.Main)}, modifier = Modifier
                 .padding(1.dp, 0.dp)
                 .fillMaxWidth()
                 .weight(1f)) {
                 Text(text = "Cancel")
             }
-            Button(onClick = { viewModel.acceptChanges(result)}, modifier = Modifier
+            Button(onClick = { viewModel.acceptChanges()}, modifier = Modifier
                 .padding(1.dp, 0.dp)
                 .fillMaxWidth()
                 .weight(1f), enabled = result.type  == AttestationResultType.CHANGED) {

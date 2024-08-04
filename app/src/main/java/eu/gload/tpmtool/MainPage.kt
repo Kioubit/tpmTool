@@ -42,7 +42,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import eu.gload.tpmtool.logic.Attestation.GetNonce
 
 @Composable
 fun MainPage(viewModel: MainViewModel = viewModel()) {
@@ -55,8 +54,12 @@ fun MainPage(viewModel: MainViewModel = viewModel()) {
                 .padding(10.dp)
                 .fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            DeleteDeviceButton()
-            Button(onClick = { viewModel.changePage(Pages.AddDevice) }) {
+            Button(onClick = {viewModel.changePage(Page.ManageDevice)},
+                enabled = uiState.selectedDevice != null
+            ) {
+                Text(text = "Edit Device")
+            }
+            Button(onClick = { viewModel.addDeviceScreen() }) {
                 Text(text = "Add Device")
             }
         }
@@ -109,36 +112,7 @@ fun QRScanButton(viewModel: MainViewModel = viewModel()) {
     }
 }
 
-@Composable
-fun DeleteDeviceButton(viewModel: MainViewModel = viewModel()) {
-    var alertDialogShown by remember { mutableStateOf(false) }
-    Button(onClick = {
-        alertDialogShown = true
-    }) {
-        Text(text = "Delete Device")
-    }
 
-    if (alertDialogShown) {
-        AlertDialog(onDismissRequest = { alertDialogShown = false }, confirmButton = {
-            TextButton(onClick = {
-                viewModel.deleteSelectedDevice()
-                alertDialogShown = false
-            }
-            ) {
-                Text(text = "Yes")
-            }
-        }, dismissButton = {
-            TextButton(onClick = {
-                alertDialogShown = false
-            }) {
-                Text(text = "Cancel")
-            }
-        }, text = {
-            Text(text = "Really delete the selected device?")
-        })
-    }
-
-}
 
 @Composable
 fun EditNonceButton(viewModel: MainViewModel = viewModel()) {
@@ -155,9 +129,6 @@ fun EditNonceButton(viewModel: MainViewModel = viewModel()) {
         textValue = uiState.nonce
         AlertDialog(onDismissRequest = { alertDialogShown = false }, confirmButton = {
             TextButton(onClick = {
-                if (textValue == "") {
-                    textValue = GetNonce()
-                }
                 viewModel.setNonce(textValue.trim())
                 alertDialogShown = false
             }
@@ -204,13 +175,9 @@ fun DevicesDropDownMenu(viewModel: MainViewModel = viewModel()) {
     ) {
         ExposedDropdownMenuBox(
             expanded = expanded,
-            onExpandedChange = {
-                if (uiState.selectedDevice != null) {
-                    expanded = !expanded
-                }
-            }) {
+            onExpandedChange = { expanded = !expanded }) {
             TextField(
-                value = if (uiState.selectedDevice == null) "No devices" else uiState.selectedDevice!!.name,
+                value = if (uiState.selectedDevice == null) "No device selected" else uiState.selectedDevice!!.name,
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },

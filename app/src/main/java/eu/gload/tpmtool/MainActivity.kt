@@ -52,12 +52,11 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun ShowPage(viewModel: MainViewModel = viewModel()) {
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-        viewModel.refreshDeviceList()
         when (uiState.page) {
-            Pages.Main -> MainPage()
-            Pages.AddDevice -> AddDevicePage()
-            Pages.AttestationResult -> AttestationResultPage()
-            Pages.Loading -> LoadingPage()
+            Page.Main -> MainPage()
+            Page.ManageDevice -> ManageDevicePage()
+            Page.AttestationResult -> AttestationResultPage()
+            Page.Loading -> LoadingPage()
         }
     }
 }
