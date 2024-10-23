@@ -37,7 +37,7 @@ fun ManageDevicePage(viewModel: MainViewModel = viewModel()) {
             deviceName.value = it
         },
             label = { Text("Device Name") }, modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrect = false)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false)
         )
     }
     Row(Modifier.padding(3.dp)) {
@@ -46,7 +46,7 @@ fun ManageDevicePage(viewModel: MainViewModel = viewModel()) {
                 devicePemB64.value = it
             },
             label = { Text("BASE64 encoded .pem public Key") },modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrect = false)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false)
         )
     }
     Row(

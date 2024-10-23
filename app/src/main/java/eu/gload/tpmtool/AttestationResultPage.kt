@@ -69,24 +69,33 @@ fun AttestationResultPage(viewModel: MainViewModel = viewModel()) {
     }
 
     Column {
-        Text(
-            text = labelText, textAlign = TextAlign.Center, modifier = Modifier
-                .background(color = labelBackgroundColor)
-                .fillMaxWidth(), fontSize = 40.sp
-        )
-        Text(text = "Device name: ${result.device?.name}", Modifier.padding(6.dp,2.dp), fontSize = 20.sp)
-        if (result.type == AttestationResultType.REPLAY) {
-            val time = result.device?.lastSuccessTime?.let { Date(it *1000) }
-            val timeFormatted = time?.let { SimpleDateFormat("yyyy-MM-dd hh:mma", Locale.US).format(it) }
-            Text(text = "Time: $timeFormatted")
-        }
-        HorizontalDivider(thickness = 1.dp, color = Color.DarkGray)
-        val scrollVertical = rememberScrollState(0)
-        val scrollHorizontal = rememberScrollState(0)
-        SelectionContainer(modifier = Modifier.weight(1f)) {
-            Text(text = detailsText, modifier = Modifier
-                .verticalScroll(scrollVertical)
-                .horizontalScroll(scrollHorizontal))
+        Column (modifier = Modifier.weight(1f)) {
+            Text(
+                text = labelText, textAlign = TextAlign.Center, modifier = Modifier
+                    .background(color = labelBackgroundColor)
+                    .fillMaxWidth(), fontSize = 40.sp
+            )
+            Text(
+                text = "Device name: ${result.device?.name}",
+                Modifier.padding(6.dp, 2.dp),
+                fontSize = 20.sp
+            )
+            if (result.type == AttestationResultType.REPLAY) {
+                val time = result.device?.lastSuccessTime?.let { Date(it * 1000) }
+                val timeFormatted =
+                    time?.let { SimpleDateFormat("yyyy-MM-dd hh:mma", Locale.US).format(it) }
+                Text(text = "Time: $timeFormatted")
+            }
+            HorizontalDivider(thickness = 1.dp, color = Color.DarkGray)
+            val scrollVertical = rememberScrollState(0)
+            val scrollHorizontal = rememberScrollState(0)
+            SelectionContainer {
+                Text(
+                    text = detailsText, modifier = Modifier
+                        .verticalScroll(scrollVertical)
+                        .horizontalScroll(scrollHorizontal)
+                )
+            }
         }
         Row (horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier
             .fillMaxWidth()
