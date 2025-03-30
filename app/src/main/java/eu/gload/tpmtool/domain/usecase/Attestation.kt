@@ -1,6 +1,8 @@
-package eu.gload.tpmtool.logic
+package eu.gload.tpmtool.domain.usecase
 
-import eu.gload.tpmtool.logic.database.Device
+import eu.gload.tpmtool.domain.model.AttestationResult
+import eu.gload.tpmtool.domain.model.AttestationResultType
+import eu.gload.tpmtool.domain.model.Device
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -21,26 +23,13 @@ object Attestation {
         return result + unixTime
     }
 
-    enum class AttestationResultType {
-        OK,
-        CHANGED,
-        FAILED,
-        REPLAY
-    }
 
-    class AttestationResult : Serializable {
-        var type: AttestationResultType = AttestationResultType.FAILED
-        var newAttestationJson: String = ""
-        var failReason: String = ""
-        var differencesString : String = ""
-        var device :Device? = null
-    }
 
     class SerializablePair<F, S> internal constructor(val first: F, val second: S) : Serializable
 
-    internal fun perform(data: String, nonce: String, oldDevice: Device): AttestationResult {
+    internal fun perform(data: String, nonce: String, device: Device): AttestationResult {
         try {
-            val pubKey = Base64.getDecoder().decode(oldDevice.base64Pem)
+            val pubKey = Base64.getDecoder().decode(device.base64Pem)
 
             val arr = data.split('|')
             if (arr.count() != 3) {
@@ -54,19 +43,19 @@ object Attestation {
             val result = Tpm2_tool_mobile.parseAndValidate(pubKey, message, pcr, signature, bNonce)
 
             val newMap: Map<Int, String> = parseAttestationJSON(result)
-            val oldMap: Map<Int, String> = parseAttestationJSON(oldDevice.attestationJson)
+            val oldMap: Map<Int, String> = parseAttestationJSON(device.attestationJson)
 
             val attestationResult = compare(oldMap, newMap)
             val newAttestationJson = JSONObject(result).toString(2)
 
             attestationResult.newAttestationJson = newAttestationJson
-            attestationResult.device = oldDevice
+            attestationResult.device = device
             return attestationResult
         } catch (ex: Exception) {
             val r = AttestationResult()
             r.type = AttestationResultType.FAILED
             r.failReason = ex.message.toString()
-            r.device = oldDevice
+            r.device = device
             return r
         }
     }

@@ -1,13 +1,13 @@
-package eu.gload.tpmtool.logic.database
+package eu.gload.tpmtool.data.database
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room.databaseBuilder
 import androidx.room.RoomDatabase
 
-@Database(entities = [Device::class], exportSchema = false, version = 1)
+@Database(entities = [DeviceEntity::class], exportSchema = false, version = 1)
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun devicesDao(): DevicesDao
+    abstract fun deviceDao(): DeviceDao
 
     companion object {
         private const val DB_NAME = "app_db"

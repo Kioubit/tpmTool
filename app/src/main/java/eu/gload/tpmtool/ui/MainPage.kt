@@ -1,4 +1,4 @@
-package eu.gload.tpmtool
+package eu.gload.tpmtool.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -15,7 +15,6 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -38,55 +37,57 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import eu.gload.tpmtool.viewModel.MainViewModel
 
 @Composable
 fun MainPage(viewModel: MainViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scroll = rememberScrollState(0)
-    Column {
-        DevicesDropDownMenu()
-        Row(
-            modifier = Modifier
-                .padding(10.dp)
-                .fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(onClick = {viewModel.changePage(Page.ManageDevice)},
-                enabled = uiState.selectedDevice != null
+    Column(Modifier.fillMaxHeight()) {
+        Column(Modifier.wrapContentHeight()) {
+            DevicesDropDownMenu()
+            Row(
+                modifier = Modifier
+                    .padding(10.dp)
+                    .fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Text(text = "Edit Device")
+                Button(
+                    onClick = { viewModel.navigateToEditDevice() },
+                    enabled = uiState.selectedDevice != null
+                ) {
+                    Text(text = "Edit Device")
+                }
+                Button(onClick = { viewModel.addDeviceScreen() }) {
+                    Text(text = "Add Device")
+                }
             }
-            Button(onClick = { viewModel.addDeviceScreen() }) {
-                Text(text = "Add Device")
+
+
+        }
+        Column(
+            modifier = Modifier
+                .verticalScroll(scroll).weight(1f).fillMaxWidth(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Nonce")
+            SelectionContainer {
+                Text(
+                    text = uiState.nonce,
+                    fontSize = 20.sp,
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.Center
+                )
             }
+
+            Spacer(modifier = Modifier.padding(2.dp))
+            QRScanButton()
+            EditNonceButton()
         }
-
-
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scroll),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Nonce")
-        SelectionContainer {
-            Text(
-                text = uiState.nonce,
-                fontSize = 20.sp,
-                fontFamily = FontFamily.Monospace,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.padding(2.dp))
-        QRScanButton()
-        EditNonceButton()
     }
 }
 
@@ -96,7 +97,7 @@ fun QRScanButton(viewModel: MainViewModel = viewModel()) {
         contract = ScanContract(),
         onResult = { result ->
             if (result != null) {
-                viewModel.attest(result.contents)
+                viewModel.performAttestation(result.contents)
             }
         }
     )
@@ -112,7 +113,6 @@ fun QRScanButton(viewModel: MainViewModel = viewModel()) {
         Text(text = "SCAN", fontSize = 30.sp)
     }
 }
-
 
 
 @Composable
@@ -191,20 +191,13 @@ fun DevicesDropDownMenu(viewModel: MainViewModel = viewModel()) {
                     .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                     .fillMaxWidth()
             )
-            // ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            // Workaround for above having wrong size https://issuetracker.google.com/issues/205589613
-            DropdownMenu(
+            ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
-                properties = PopupProperties(
-                    focusable = true,
-                    dismissOnClickOutside = true,
-                    dismissOnBackPress = true
-                ),
                 modifier = Modifier.exposedDropdownSize()
             ) {
-                if (uiState.deviceList != null) {
-                    uiState.deviceList!!.forEach {
+                if (uiState.devices != null) {
+                    uiState.devices!!.forEach {
                         DropdownMenuItem(
                             text = { Text(text = it.name) },
                             onClick = { viewModel.selectDevice(it); expanded = false },

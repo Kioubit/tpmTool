@@ -1,6 +1,5 @@
-package eu.gload.tpmtool
+package eu.gload.tpmtool.ui
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -24,7 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import eu.gload.tpmtool.logic.Attestation.AttestationResultType
+import eu.gload.tpmtool.domain.model.AttestationResultType
+import eu.gload.tpmtool.viewModel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -35,7 +35,6 @@ fun AttestationResultPage(viewModel: MainViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val result = uiState.attestationResult
     if (result == null) {
-        Toast.makeText(App.getMContext(),"An error occurred",Toast.LENGTH_SHORT).show()
         return
     }
     var labelBackgroundColor = Color.Red
@@ -100,7 +99,7 @@ fun AttestationResultPage(viewModel: MainViewModel = viewModel()) {
         Row (horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()){
-            Button(onClick = { viewModel.changePage(Page.Main)}, modifier = Modifier
+            Button(onClick = { viewModel.handleBackToMain()}, modifier = Modifier
                 .padding(1.dp, 0.dp)
                 .fillMaxWidth()
                 .weight(1f)) {
