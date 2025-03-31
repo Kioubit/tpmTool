@@ -31,13 +31,13 @@ import eu.gload.tpmtool.viewModel.NavigationEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Layout(vm: MainViewModel) {
+fun Layout(viewModel: MainViewModel) {
     val context = LocalContext.current
     val navController = rememberNavController()
-    val uiState by vm.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(vm, navController) {
-        vm.navigationEvent.collect { event ->
+    LaunchedEffect(viewModel, navController) {
+        viewModel.navigationEvent.collect { event ->
             Log.i("Navigation", event.routeString.toString())
             when (event) {
                 is NavigationEvent.To -> {
@@ -77,19 +77,19 @@ fun Layout(vm: MainViewModel) {
                         exitTransition = { fadeOut(animationSpec = tween(durationMillis = 400)) },
                     ) {
                         composable(NavigationEvent.Routes.MAIN.routeString) {
-                            MainPage(vm)
+                            MainPage(viewModel)
                         }
                         composable(NavigationEvent.Routes.ATTESTATION_RESULT.routeString) {
-                            AttestationResultPage(vm)
+                            AttestationResultPage(viewModel)
                         }
                         composable(NavigationEvent.Routes.MANAGE_DEVICE.routeString) {
-                            ManageDevicePage(vm)
+                            ManageDevicePage(viewModel)
                         }
                     }
 
                     LoadingOverlay(isVisible = uiState.isLoading)
                     ErrorOverlay(uiState.errorMessage) {
-                        vm.dismissError()
+                        viewModel.dismissError()
                     }
                 }
             })
