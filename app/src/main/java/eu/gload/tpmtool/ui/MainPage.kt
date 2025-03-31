@@ -38,18 +38,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import eu.gload.tpmtool.viewModel.MainViewModel
 
 @Composable
-fun MainPage(viewModel: MainViewModel = viewModel()) {
+fun MainPage(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scroll = rememberScrollState(0)
     Column(Modifier.fillMaxHeight()) {
         Column(Modifier.wrapContentHeight()) {
-            DevicesDropDownMenu()
+            DevicesDropDownMenu(viewModel)
             Row(
                 modifier = Modifier
                     .padding(10.dp)
@@ -85,14 +84,14 @@ fun MainPage(viewModel: MainViewModel = viewModel()) {
             }
 
             Spacer(modifier = Modifier.padding(2.dp))
-            QRScanButton()
-            EditNonceButton()
+            QRScanButton(viewModel)
+            EditNonceButton(viewModel)
         }
     }
 }
 
 @Composable
-fun QRScanButton(viewModel: MainViewModel = viewModel()) {
+fun QRScanButton(viewModel: MainViewModel) {
     val scanLauncher = rememberLauncherForActivityResult(
         contract = ScanContract(),
         onResult = { result ->
@@ -116,7 +115,7 @@ fun QRScanButton(viewModel: MainViewModel = viewModel()) {
 
 
 @Composable
-fun EditNonceButton(viewModel: MainViewModel = viewModel()) {
+fun EditNonceButton(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var alertDialogShown by remember { mutableStateOf(false) }
     var textValue by remember { mutableStateOf("") }
@@ -164,7 +163,7 @@ fun EditNonceButton(viewModel: MainViewModel = viewModel()) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DevicesDropDownMenu(viewModel: MainViewModel = viewModel()) {
+fun DevicesDropDownMenu(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var expanded by remember { mutableStateOf(false) }
 

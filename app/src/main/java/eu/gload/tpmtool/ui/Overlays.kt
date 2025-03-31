@@ -1,5 +1,9 @@
 package eu.gload.tpmtool.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -16,7 +20,11 @@ import androidx.compose.ui.graphics.Color
 
 @Composable
 fun LoadingOverlay(isVisible: Boolean) {
-    if (isVisible) {
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+        exit = fadeOut(animationSpec = tween(durationMillis = 300))
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()

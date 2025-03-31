@@ -20,11 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.gload.tpmtool.viewModel.MainViewModel
 
 @Composable
-fun ManageDevicePage(viewModel: MainViewModel = viewModel()) {
+fun ManageDevicePage(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val deviceName = remember {
         mutableStateOf(
@@ -49,7 +48,8 @@ fun ManageDevicePage(viewModel: MainViewModel = viewModel()) {
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Ascii,
                     autoCorrectEnabled = false
-                )
+                ),
+                singleLine = true
             )
         }
         Row(Modifier.padding(3.dp)) {
@@ -72,12 +72,12 @@ fun ManageDevicePage(viewModel: MainViewModel = viewModel()) {
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Button(onClick = { viewModel.handleBackToMain() }) {
+            Button(onClick = { viewModel.navigateToMain() }) {
                 Text(text = "Cancel")
             }
 
             if (uiState.selectedDevice != null) {
-                DeleteDeviceButton()
+                DeleteDeviceButton(viewModel)
             }
 
             Button(onClick = {
@@ -104,7 +104,7 @@ fun ManageDevicePage(viewModel: MainViewModel = viewModel()) {
 }
 
 @Composable
-private fun DeleteDeviceButton(viewModel: MainViewModel = viewModel()) {
+private fun DeleteDeviceButton(viewModel: MainViewModel) {
     var alertDialogShown by remember { mutableStateOf(false) }
     Button(onClick = {
         alertDialogShown = true

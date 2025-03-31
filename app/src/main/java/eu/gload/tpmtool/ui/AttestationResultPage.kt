@@ -22,7 +22,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.gload.tpmtool.domain.model.AttestationResultType
 import eu.gload.tpmtool.viewModel.MainViewModel
 import java.text.SimpleDateFormat
@@ -31,7 +30,7 @@ import java.util.Locale
 
 
 @Composable
-fun AttestationResultPage(viewModel: MainViewModel = viewModel()) {
+fun AttestationResultPage(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val result = uiState.attestationResult
     if (result == null) {
@@ -68,7 +67,7 @@ fun AttestationResultPage(viewModel: MainViewModel = viewModel()) {
     }
 
     Column {
-        Column (modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = labelText, textAlign = TextAlign.Center, modifier = Modifier
                     .background(color = labelBackgroundColor)
@@ -96,19 +95,25 @@ fun AttestationResultPage(viewModel: MainViewModel = viewModel()) {
                 )
             }
         }
-        Row (horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()){
-            Button(onClick = { viewModel.handleBackToMain()}, modifier = Modifier
-                .padding(1.dp, 0.dp)
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)) {
+                .wrapContentHeight()
+        ) {
+            Button(
+                onClick = { viewModel.navigateBack() }, modifier = Modifier
+                    .padding(1.dp, 0.dp)
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
                 Text(text = "Cancel")
             }
-            Button(onClick = { viewModel.acceptChanges()}, modifier = Modifier
-                .padding(1.dp, 0.dp)
-                .fillMaxWidth()
-                .weight(1f), enabled = result.type  == AttestationResultType.CHANGED) {
+            Button(
+                onClick = { viewModel.acceptChanges() }, modifier = Modifier
+                    .padding(1.dp, 0.dp)
+                    .fillMaxWidth()
+                    .weight(1f), enabled = result.type == AttestationResultType.CHANGED
+            ) {
                 Text(text = "Accept Changes")
             }
         }

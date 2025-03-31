@@ -1,5 +1,6 @@
 package eu.gload.tpmtool.ui
 
+import android.util.Log
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -31,31 +31,23 @@ import eu.gload.tpmtool.viewModel.NavigationEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Layout() {
+fun Layout(vm: MainViewModel) {
     val context = LocalContext.current
-    val viewModel: MainViewModel = viewModel()
     val navController = rememberNavController()
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(uiState.navigationEvent) {
-        when (uiState.navigationEvent) {
-            NavigationEvent.TO_ATTESTATION_RESULT -> {
-                navController.navigate("attestation_result")
-                viewModel.resetNavigation()
-            }
-
-            NavigationEvent.TO_MANAGE_DEVICE -> {
-                navController.navigate("manage_device")
-                viewModel.resetNavigation()
-            }
-
-            NavigationEvent.TO_MAIN -> {
-                navController.popBackStack()
-                viewModel.resetNavigation()
-            }
-
-            NavigationEvent.NONE -> {
-                // No navigation needed
+    LaunchedEffect(vm, navController) {
+        vm.navigationEvent.collect { event ->
+            Log.i("Navigation", event.routeString.toString())
+            when (event) {
+                is NavigationEvent.To -> {
+                    navController.navigate(event.routeString)
+                }
+                NavigationEvent.Back -> {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(NavigationEvent.Routes.MAIN.routeString)
+                    }
+                }
             }
         }
     }
@@ -80,24 +72,24 @@ fun Layout() {
                 ) {
                     NavHost(
                         navController = navController,
-                        startDestination = "main",
+                        startDestination = NavigationEvent.Routes.MAIN.routeString,
                         enterTransition = { fadeIn(animationSpec = tween(durationMillis = 400)) },
                         exitTransition = { fadeOut(animationSpec = tween(durationMillis = 400)) },
                     ) {
-                        composable("main") {
-                            MainPage(viewModel)
+                        composable(NavigationEvent.Routes.MAIN.routeString) {
+                            MainPage(vm)
                         }
-                        composable("attestation_result") {
-                            AttestationResultPage(viewModel)
+                        composable(NavigationEvent.Routes.ATTESTATION_RESULT.routeString) {
+                            AttestationResultPage(vm)
                         }
-                        composable("manage_device") {
-                            ManageDevicePage(viewModel)
+                        composable(NavigationEvent.Routes.MANAGE_DEVICE.routeString) {
+                            ManageDevicePage(vm)
                         }
                     }
 
                     LoadingOverlay(isVisible = uiState.isLoading)
                     ErrorOverlay(uiState.errorMessage) {
-                        viewModel.dismissError()
+                        vm.dismissError()
                     }
                 }
             })

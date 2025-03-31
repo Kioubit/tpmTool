@@ -1,67 +1,67 @@
 package eu.gload.tpmtool.viewModel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import eu.gload.tpmtool.domain.model.AttestationResult
 import eu.gload.tpmtool.domain.model.AttestationResultType
 import eu.gload.tpmtool.domain.model.Device
 import eu.gload.tpmtool.domain.usecase.Attestation
+import eu.gload.tpmtool.domain.usecase.AttestationUseCase
+import eu.gload.tpmtool.domain.usecase.ManageDevicesUseCase
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class NavigationEvent {
-    NONE,
-    TO_ATTESTATION_RESULT,
-    TO_MANAGE_DEVICE,
-    TO_MAIN
-}
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val stateRepository: StateRepository = StateRepository.getInstance(getApplication())
-    private val _uiState = stateRepository.uiState
+class MainViewModel(
+    private val manageDevicesUseCase: ManageDevicesUseCase,
+    private val attestationUseCase: AttestationUseCase
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
-    private val manageDevicesUseCase = stateRepository.manageDevicesUseCase
-    private val attestationUseCase = stateRepository.attestationUseCase
+    private val _navigationEvent = MutableSharedFlow<NavigationEvent>()
+    val navigationEvent: SharedFlow<NavigationEvent> = _navigationEvent.asSharedFlow()
 
     init {
-        if (uiState.value.devices == null) {
-            loadDevices()
+        viewModelScope.launch {
+            monitorDevices()
         }
     }
 
-    private fun loadDevices() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            try {
-                manageDevicesUseCase.getDeviceList().collect { devices ->
-                    _uiState.update {
-                        it.copy(
-                            devices = devices,
-                            isLoading = false,
-                            // Ensure selected device is still valid
-                            selectedDevice = it.selectedDevice?.let { selected ->
-                                devices.find { device -> device.id == selected.id }
-                            }
-                        )
-                    }
-
-                    // Select the first one
-                    if (uiState.value.selectedDevice == null) {
-                        uiState.value.devices?.getOrNull(0)?.let { device ->
-                            _uiState.update { it.copy(selectedDevice = device) }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
+    private suspend fun monitorDevices() {
+        try {
+            // The flow will continuously update
+            manageDevicesUseCase.getDeviceList().collect { devices ->
                 _uiState.update {
                     it.copy(
+                        devices = devices,
+                        // Any function editing the database table should set this to true first
                         isLoading = false,
-                        errorMessage = "Failed to load devices: ${e.message}"
+                        // Ensure selected device is still valid
+                        selectedDevice = it.selectedDevice?.let { selected ->
+                            devices.find { device -> device.id == selected.id }
+                        }
                     )
                 }
+
+                // Select the first one
+                if (uiState.value.selectedDevice == null) {
+                    uiState.value.devices?.getOrNull(0)?.let { device ->
+                        _uiState.update { it.copy(selectedDevice = device) }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = "Failed to load devices: ${e.message}"
+                )
             }
         }
     }
@@ -78,13 +78,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val success = attestationUseCase.acceptChanges(result)
                 if (success) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            navigationEvent = NavigationEvent.TO_MAIN,
-                            devices = null
-                        )
-                    }
+                    _navigationEvent.emit(NavigationEvent.To(NavigationEvent.Routes.MAIN))
                 } else {
                     _uiState.update {
                         it.copy(
@@ -104,19 +98,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun navigateToEditDevice() {
-        _uiState.update { it.copy(navigationEvent = NavigationEvent.TO_MANAGE_DEVICE) }
+    fun navigateToEditDevice() = viewModelScope.launch {
+        _navigationEvent.emit(NavigationEvent.To(NavigationEvent.Routes.MANAGE_DEVICE))
     }
-    fun handleBackToMain() {
-        _uiState.update {
-            it.copy(
-                navigationEvent = NavigationEvent.TO_MAIN,
-                attestationResult = null
-            )
-        }
+
+    fun navigateToMain() = viewModelScope.launch {
+        _navigationEvent.emit(NavigationEvent.To(NavigationEvent.Routes.MAIN))
     }
-    fun resetNavigation() {
-        _uiState.update { it.copy(navigationEvent = NavigationEvent.NONE) }
+
+    fun navigateBack() = viewModelScope.launch {
+        _navigationEvent.emit(NavigationEvent.Back)
     }
 
     fun dismissError() {
@@ -125,7 +116,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveDevice(device: Device?, name: String, pubKey: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true) }
             try {
                 val success = if (device == null) {
                     // Adding a new device
@@ -136,12 +127,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 if (success) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            navigationEvent = NavigationEvent.TO_MAIN
-                        )
-                    }
+                    _navigationEvent.emit(NavigationEvent.To(NavigationEvent.Routes.MAIN))
                 } else {
                     _uiState.update {
                         it.copy(
@@ -154,7 +140,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Error: ${e.message}"
+                        errorMessage = "${e.message}"
                     )
                 }
             }
@@ -162,9 +148,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
-
-    fun viewLastResult() = viewModelScope.launch{
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+    fun viewLastResult() = viewModelScope.launch {
+        _uiState.update { it.copy(isLoading = true) }
         val oldResult = AttestationResult()
         oldResult.device = uiState.value.selectedDevice
         oldResult.type = AttestationResultType.REPLAY
@@ -173,9 +158,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             currentState.copy(
                 isLoading = false,
                 attestationResult = oldResult,
-                navigationEvent = NavigationEvent.TO_ATTESTATION_RESULT
             )
         }
+        _navigationEvent.emit(NavigationEvent.To(NavigationEvent.Routes.ATTESTATION_RESULT))
     }
 
 
@@ -184,12 +169,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return@launch
         }
         try {
+            _uiState.update {
+                it.copy(
+                    isLoading = true, // Await DB update on flow
+                    selectedDevice = null,
+                )
+            }
             manageDevicesUseCase.deleteDevice(uiState.value.selectedDevice!!)
-            _uiState.update { it.copy(
-                selectedDevice = null,
-                navigationEvent = NavigationEvent.TO_MAIN,
-                devices = null
-            ) }
+            _navigationEvent.emit(NavigationEvent.To(NavigationEvent.Routes.MAIN))
         } catch (e: Exception) {
             _uiState.update {
                 it.copy(errorMessage = "Failed to delete device: ${e.message}")
@@ -203,16 +190,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val nonce = currentState.nonce
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    attestationResult = null
+                )
+            }
             try {
                 val result = attestationUseCase.attest(device?.id, input, nonce)
                 _uiState.update {
                     it.copy(
                         attestationResult = result,
                         isLoading = false,
-                        navigationEvent = NavigationEvent.TO_ATTESTATION_RESULT
                     )
                 }
+                _navigationEvent.emit(NavigationEvent.To(NavigationEvent.Routes.ATTESTATION_RESULT))
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -236,8 +228,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { currentState ->
             currentState.copy(
                 selectedDevice = null,
-                navigationEvent = NavigationEvent.TO_MANAGE_DEVICE
             )
+        }
+        viewModelScope.launch {
+            _navigationEvent.emit(NavigationEvent.To(NavigationEvent.Routes.MANAGE_DEVICE))
         }
     }
 }
