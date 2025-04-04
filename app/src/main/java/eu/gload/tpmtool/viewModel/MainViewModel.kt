@@ -171,8 +171,7 @@ class MainViewModel(
         try {
             _uiState.update {
                 it.copy(
-                    isLoading = true, // Await DB update on flow
-                    selectedDevice = null,
+                    isLoading = true // Await DB update on flow
                 )
             }
             manageDevicesUseCase.deleteDevice(uiState.value.selectedDevice!!)
