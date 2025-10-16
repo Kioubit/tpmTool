@@ -36,9 +36,9 @@ fun AttestationResultPage(viewModel: MainViewModel) {
     if (result == null) {
         return
     }
-    var labelBackgroundColor = Color.Red
-    var labelText = "N/A"
-    var detailsText = "N/A"
+    var labelBackgroundColor: Color
+    var labelText: String
+    var detailsText : String
     when (result.type) {
         AttestationResultType.OK -> {
             labelBackgroundColor = Color(0xff2bc241)

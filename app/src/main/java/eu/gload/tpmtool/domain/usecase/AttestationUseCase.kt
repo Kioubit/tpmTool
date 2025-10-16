@@ -22,10 +22,10 @@ class AttestationUseCase(private val repository: DeviceRepository) {
     }
 
     suspend fun acceptChanges(result: AttestationResult): Boolean = withContext(Dispatchers.IO) {
-        result.device?.let {
+        return@withContext result.device?.let {
             it.attestationJson = result.newAttestationJson
             it.lastSuccessTime = System.currentTimeMillis() / 1000L
-            return@withContext repository.updateDevice(DeviceMapper.mapToEntity(it))
+            repository.updateDevice(DeviceMapper.mapToEntity(it))
         } ?: false
     }
 }
